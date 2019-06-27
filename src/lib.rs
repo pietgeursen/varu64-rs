@@ -1,87 +1,82 @@
-#[macro_use]
-extern crate bitflags;
+extern crate byteorder;
+use byteorder::{ByteOrder, BigEndian};
 
-bitflags! {
-    struct Flags: u8 {
-        const ONE_BYTE = 248;
-        const TWO_BYTES = 249;
-        const THREE_BYTES = 250;
-        const FOUR_BYTES = 251;
-        const FIVE_BYTES = 252;
-        const SIX_BYTES = 253;
-        const SEVEN_BYTES = 254;
-        const EIGHT_BYTES = 255;
-    }
-}
+
+const ONE_BYTE: u8 = 248;
+const TWO_BYTES: u8 = 249;
+const THREE_BYTES: u8 = 250;
+const FOUR_BYTES: u8 = 251;
+const FIVE_BYTES: u8 = 252;
+const SIX_BYTES: u8 = 253;
+const SEVEN_BYTES: u8 = 254;
+const EIGHT_BYTES: u8 = 255;
 
 #[no_mangle]
 pub extern "C" fn decode(bytes: &[u8]) -> u64 {
-    let bits = Flags::from_bits(bytes[0]).unwrap();
-
-    match bits {
-        Flags::ONE_BYTE => bytes[1] as u64,
-        Flags::TWO_BYTES => ((bytes[1] as u64) << 8) | (bytes[2] as u64),
-        Flags::THREE_BYTES => {
-            ((bytes[1] as u64) << 16) | ((bytes[2] as u64) << 8) | (bytes[3] as u64)
-        }
-        Flags::FOUR_BYTES => {
-            ((bytes[1] as u64) << 16)
-                | ((bytes[2] as u64) << 16)
-                | ((bytes[3] as u64) << 8)
-                | (bytes[4] as u64)
-        }
-        Flags::FIVE_BYTES => {
-            ((bytes[1] as u64) << 32)
-                | ((bytes[2] as u64) << 24)
-                | ((bytes[3] as u64) << 16)
-                | ((bytes[4] as u64) << 8)
-                | (bytes[5] as u64)
-        }
-        Flags::SIX_BYTES => {
-            ((bytes[1] as u64) << 40)
-                | ((bytes[2] as u64) << 32)
-                | ((bytes[3] as u64) << 24)
-                | ((bytes[4] as u64) << 16)
-                | ((bytes[5] as u64) << 8)
-                | (bytes[6] as u64)
-        }
-        Flags::SEVEN_BYTES => {
-            ((bytes[1] as u64) << 48)
-                | ((bytes[2] as u64) << 40)
-                | ((bytes[3] as u64) << 32)
-                | ((bytes[4] as u64) << 24)
-                | ((bytes[5] as u64) << 16)
-                | ((bytes[6] as u64) << 8)
-                | (bytes[7] as u64)
-        }
-        Flags::EIGHT_BYTES => {
-            ((bytes[1] as u64) << 56)
-                | ((bytes[2] as u64) << 48)
-                | ((bytes[3] as u64) << 40)
-                | ((bytes[4] as u64) << 32)
-                | ((bytes[5] as u64) << 24)
-                | ((bytes[6] as u64) << 16)
-                | ((bytes[7] as u64) << 8)
-                | (bytes[8] as u64)
-        }
-        _ => bytes[0] as u64,
+    let first_byte = bytes[0];
+    if first_byte >= ONE_BYTE {
+        let num_bytes = first_byte - ONE_BYTE + 1;
+        BigEndian::read_uint(&bytes[1..], num_bytes as usize)
+    } else {
+        first_byte as u64
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::decode;
+    use crate::*;
 
     #[test]
     fn decode_zero() {
-        let bytes = [0];
-        assert_eq!(decode(&bytes), 0);
+        let bytes = [0x0A];
+        assert_eq!(decode(&bytes), 0x0A);
+    }
+    #[test]
+    fn decode_one_byte_number() {
+        let bytes = [ONE_BYTE, 0xFE];
+        let result  = decode(&bytes);
+        assert_eq!(result, 0xFE);
+    }
+    #[test]
+    fn decode_two_byte_number() {
+        let bytes = [TWO_BYTES, 0x0B, 0x0A];
+        let result  = decode(&bytes);
+        assert_eq!(result, 0x0B0A);
+    }
+    #[test]
+    fn decode_three_byte_number() {
+        let bytes = [THREE_BYTES, 0x0C, 0x0B, 0x0A];
+        let result  = decode(&bytes);
+        assert_eq!(result, 0x0C0B0A);
+    }
+    #[test]
+    fn decode_four_byte_number() {
+        let bytes = [FOUR_BYTES, 0x0D, 0x0C, 0x0B, 0x0A];
+        let result  = decode(&bytes);
+        assert_eq!(result, 0x0D0C0B0A);
+    }
+    #[test]
+    fn decode_five_byte_number() {
+        let bytes = [FIVE_BYTES, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A];
+        let result  = decode(&bytes);
+        assert_eq!(result, 0x0E0D0C0B0A);
+    }
+    #[test]
+    fn decode_six_byte_number() {
+        let bytes = [SIX_BYTES, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A];
+        let result  = decode(&bytes);
+        assert_eq!(result, 0x0F0E0D0C0B0A);
+    }
+    #[test]
+    fn decode_seven_byte_number() {
+        let bytes = [SEVEN_BYTES, 0x1A, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A];
+        let result  = decode(&bytes);
+        assert_eq!(result, 0x1A0F0E0D0C0B0A);
     }
     #[test]
     fn decode_eight_byte_number() {
-        let bytes = [0xFF, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x1A, 0x1B];
-        let result = decode(&bytes);
-        println!("{:X}", result);
-        assert_eq!(result,  0x0A0B0C0D0E0F1A1B);
+        let bytes = [EIGHT_BYTES, 0x1B, 0x1A, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A];
+        let result  = decode(&bytes);
+        assert_eq!(result, 0x1B1A0F0E0D0C0B0A);
     }
 }
