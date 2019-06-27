@@ -20,49 +20,49 @@ pub extern "C" fn decode(bytes: &[u8]) -> u64 {
 
     match bits {
         Flags::ONE_BYTE => bytes[1] as u64,
-        Flags::TWO_BYTES => ((bytes[2] as u64) << 8) | (bytes[1] as u64),
+        Flags::TWO_BYTES => ((bytes[1] as u64) << 8) | (bytes[2] as u64),
         Flags::THREE_BYTES => {
-            ((bytes[3] as u64) << 16) | ((bytes[2] as u64) << 8) | (bytes[1] as u64)
+            ((bytes[1] as u64) << 16) | ((bytes[2] as u64) << 8) | (bytes[3] as u64)
         }
         Flags::FOUR_BYTES => {
-            ((bytes[4] as u64) << 16)
-                | ((bytes[3] as u64) << 16)
-                | ((bytes[2] as u64) << 8)
-                | (bytes[1] as u64)
+            ((bytes[1] as u64) << 16)
+                | ((bytes[2] as u64) << 16)
+                | ((bytes[3] as u64) << 8)
+                | (bytes[4] as u64)
         }
         Flags::FIVE_BYTES => {
-            ((bytes[5] as u64) << 32)
-                | ((bytes[4] as u64) << 24)
+            ((bytes[1] as u64) << 32)
+                | ((bytes[2] as u64) << 24)
                 | ((bytes[3] as u64) << 16)
-                | ((bytes[2] as u64) << 8)
-                | (bytes[1] as u64)
+                | ((bytes[4] as u64) << 8)
+                | (bytes[5] as u64)
         }
         Flags::SIX_BYTES => {
-            ((bytes[6] as u64) << 40)
-                | ((bytes[5] as u64) << 32)
-                | ((bytes[4] as u64) << 24)
-                | ((bytes[3] as u64) << 16)
-                | ((bytes[2] as u64) << 8)
-                | (bytes[1] as u64)
+            ((bytes[1] as u64) << 40)
+                | ((bytes[2] as u64) << 32)
+                | ((bytes[3] as u64) << 24)
+                | ((bytes[4] as u64) << 16)
+                | ((bytes[5] as u64) << 8)
+                | (bytes[6] as u64)
         }
         Flags::SEVEN_BYTES => {
-            ((bytes[7] as u64) << 48)
-                | ((bytes[6] as u64) << 40)
-                | ((bytes[5] as u64) << 32)
+            ((bytes[1] as u64) << 48)
+                | ((bytes[2] as u64) << 40)
+                | ((bytes[3] as u64) << 32)
                 | ((bytes[4] as u64) << 24)
-                | ((bytes[3] as u64) << 16)
-                | ((bytes[2] as u64) << 8)
-                | (bytes[1] as u64)
+                | ((bytes[5] as u64) << 16)
+                | ((bytes[6] as u64) << 8)
+                | (bytes[7] as u64)
         }
         Flags::EIGHT_BYTES => {
-            ((bytes[8] as u64) << 56)
-                | ((bytes[7] as u64) << 48)
-                | ((bytes[6] as u64) << 40)
-                | ((bytes[5] as u64) << 32)
-                | ((bytes[4] as u64) << 24)
-                | ((bytes[3] as u64) << 16)
-                | ((bytes[2] as u64) << 8)
-                | (bytes[1] as u64)
+            ((bytes[1] as u64) << 56)
+                | ((bytes[2] as u64) << 48)
+                | ((bytes[3] as u64) << 40)
+                | ((bytes[4] as u64) << 32)
+                | ((bytes[5] as u64) << 24)
+                | ((bytes[6] as u64) << 16)
+                | ((bytes[7] as u64) << 8)
+                | (bytes[8] as u64)
         }
         _ => bytes[0] as u64,
     }
@@ -79,7 +79,9 @@ mod tests {
     }
     #[test]
     fn decode_eight_byte_number() {
-        let bytes = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
-        assert_eq!(decode(&bytes), core::u64::MAX);
+        let bytes = [0xFF, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x1A, 0x1B];
+        let result = decode(&bytes);
+        println!("{:X}", result);
+        assert_eq!(result,  0x0A0B0C0D0E0F1A1B);
     }
 }
